@@ -1,2 +1,19 @@
+[project]
+name = "habit-maker"
+version = "0.1.0"
+description = "習慣化を支援するWebアプリ"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy",
+    "aiosqlite",
+    "pydantic",
+    "pydantic-settings",
+    "jinja2",
+    "pwdlib",
+    "pyjwt",
+]
+
 [tool.vercel]
 entrypoint = "backend.main:app"
