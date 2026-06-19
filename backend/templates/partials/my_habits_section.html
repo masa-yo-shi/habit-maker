@@ -1,0 +1,12 @@
+<section id="my-habits-section"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <h2>My Habit</h2>
+  <label>
+    <select id="page1-habit-select" name="habit">
+      {% for habit in my_habits %}
+        <option value="{{ habit.name }}">{{ habit.name }}</option>
+      {% else %}
+        <option value="">nothing registered</option>
+      {% endfor %}
+    </select>
+  </label>
+</section>

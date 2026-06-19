@@ -1,0 +1,29 @@
+<section id="calendar-section"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <h2>Calender</h2>
+  <div class="actions" style="margin-bottom: 12px;">
+    <button type="button" class="secondary" hx-get="/ui/calendar?year={{ prev_year }}&month={{ prev_month }}" hx-target="#calendar-section" hx-swap="outerHTML">←</button>
+    <div class="meta" style="align-self: center;">{{ calendar_label }}</div>
+    <button type="button" class="secondary" hx-get="/ui/calendar?year={{ next_year }}&month={{ next_month }}" hx-target="#calendar-section" hx-swap="outerHTML">→</button>
+  </div>
+
+  <section id="calendar-days"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div class="calendar-days">
+    {% for day in calendar_summary.days %}
+      <div class="day-card">
+        <div class="meta">{{ day.entry_date }}</div>
+        {% if day.entries %}
+          <div class="item-list">
+            {% for entry in day.entries %}
+              <div class="card item-card">
+                <button class="delete" hx-delete="/ui/diary-entries/{{ entry.id }}?year={{ calendar_year }}&month={{ calendar_month }}" hx-target="#calendar-days" hx-swap="outerHTML" hx-confirm="Delete this diary entry?">×</button>
+                <div>{{ entry.title }}</div>
+                <div class="meta">{{ entry.content }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  </section>
+</section>

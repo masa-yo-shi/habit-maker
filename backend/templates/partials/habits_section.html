@@ -1,0 +1,38 @@
+<section id="habits-section">
+  <h2>Habits</h2>
+  <p>登録・更新・削除を HTMX で即時反映します。</p>
+
+  <form hx-post="/ui/habits" hx-ext="json-enc" hx-target="#habits-section" hx-swap="outerHTML">
+    <input name="name" placeholder="Name" required>
+    <input name="description" placeholder="Description" required>
+    <select name="category" required>
+      <option value="Health">Health</option>
+      <option value="Personal Development">Personal Development</option>
+      <option value="Mental Health">Mental Health</option>
+      <option value="My Habits">My Habits</option>
+    </select>
+    <button type="submit">Add habit</button>
+  </form>
+
+  <div class="item-list" style="margin-top: 16px;">
+    {% for habit in habits %}
+      <form class="card item-card" hx-put="/ui/habits/{{ habit.id }}" hx-ext="json-enc" hx-target="#habits-section" hx-swap="outerHTML">
+        <input type="hidden" name="id" value="{{ habit.id }}">
+        <input name="name" value="{{ habit.name }}" required>
+        <input name="description" value="{{ habit.description }}" required>
+        <select name="category" required>
+          <option value="Health" {% if habit.category == "Health" %}selected{% endif %}>Health</option>
+          <option value="Personal Development" {% if habit.category == "Personal Development" %}selected{% endif %}>Personal Development</option>
+          <option value="Mental Health" {% if habit.category == "Mental Health" %}selected{% endif %}>Mental Health</option>
+          <option value="My Habits" {% if habit.category == "My Habits" %}selected{% endif %}>My Habits</option>
+        </select>
+        <div class="actions">
+          <button type="submit">Save</button>
+          <button type="button" class="danger" hx-delete="/ui/habits/{{ habit.id }}" hx-target="#habits-section" hx-swap="outerHTML" hx-confirm="Delete this habit?">Delete</button>
+        </div>
+      </form>
+    {% else %}
+      <p>No habits yet.</p>
+    {% endfor %}
+  </div>
+</section>

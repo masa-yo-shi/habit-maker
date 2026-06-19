@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Habit Maker - Login{% endblock %}
+
+{% block body %}
+<header>
+  <h1>Habit Booster</h1>
+  <p>Log in to see your habits.</p>
+</header>
+
+<main class="stack">
+  <section class="card">
+    <h2>Log in</h2>
+    <form id="login-form">
+      <input type="text" id="login-username" name="username" placeholder="Username" autocomplete="username" required>
+      <input type="password" id="login-password" name="password" placeholder="Password" autocomplete="current-password" required>
+      <div class="actions">
+        <button type="submit">Log in</button>
+      </div>
+    </form>
+    <div id="login-error" class="meta"></div>
+    <p><a href="/register-page">Need an account? Register</a></p>
+  </section>
+</main>
+
+<script>
+  document.getElementById('login-form').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const errorBox = document.getElementById('login-error');
+    errorBox.textContent = '';
+
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    try {
+      const response = await fetch('/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ username, password }),
+      });
+
+      if (!response.ok) {
+        let message = 'Login failed.';
+        try {
+          const data = await response.json();
+          message = data.detail || message;
+        } catch (e) {
+          // ignore parse error
+        }
+        errorBox.textContent = message;
+        return;
+      }
+
+      window.location.href = '/';
+    } catch (error) {
+      errorBox.textContent = 'Login failed.';
+    }
+  });
+</script>
+{% endblock %}

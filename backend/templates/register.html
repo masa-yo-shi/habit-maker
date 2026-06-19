@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Habit Maker - Register{% endblock %}
+
+{% block body %}
+<header>
+  <h1>Habit Booster</h1>
+  <p>Create an account to start tracking your habits.</p>
+</header>
+
+<main class="stack">
+  <section class="card">
+    <h2>Register</h2>
+    <form id="register-form">
+      <input type="text" id="register-username" name="username" placeholder="Username (min 3 chars)" autocomplete="username" required>
+      <input type="password" id="register-password" name="password" placeholder="Password (min 8 chars)" autocomplete="new-password" required>
+      <div class="actions">
+        <button type="submit">Register</button>
+      </div>
+    </form>
+    <div id="register-error" class="meta"></div>
+    <p><a href="/login-page">Already have an account? Log in</a></p>
+  </section>
+</main>
+
+<script>
+  document.getElementById('register-form').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const errorBox = document.getElementById('register-error');
+    errorBox.textContent = '';
+
+    const username = document.getElementById('register-username').value.trim();
+    const password = document.getElementById('register-password').value;
+
+    try {
+      const response = await fetch('/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ username, password }),
+      });
+
+      if (!response.ok) {
+        let message = 'Registration failed.';
+        try {
+          const data = await response.json();
+          message = data.detail || message;
+        } catch (e) {
+          // ignore parse error
+        }
+        errorBox.textContent = message;
+        return;
+      }
+
+      window.location.href = '/login-page';
+    } catch (error) {
+      errorBox.textContent = 'Registration failed.';
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,33 @@
+<section id="diary-section"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <h2>Diary entries</h2>
+  <p>現在のカレンダー月に合わせて記録します。</p>
+
+  <form
+    hx-post="/ui/diary-entries?year={{ calendar_year }}&month={{ calendar_month }}"
+    hx-ext="json-enc"
+    hx-target="#diary-section"
+    hx-swap="outerHTML">
+    <input type="date" name="entry_date" required>
+    <input name="title" placeholder="Title" required>
+    <textarea name="content" placeholder="Content" required></textarea>
+    <button type="submit">Add entry</button>
+  </form>
+
+  <div class="item-list" style="margin-top: 16px;">
+    {% for entry in diary_entries %}
+      <form class="card item-card" hx-put="/ui/diary-entries/{{ entry.id }}?year={{ calendar_year }}&month={{ calendar_month }}" hx-ext="json-enc" hx-target="#diary-section" hx-swap="outerHTML">
+        <input type="hidden" name="id" value="{{ entry.id }}">
+        <input type="date" name="entry_date" value="{{ entry.entry_date }}" required>
+        <input name="title" value="{{ entry.title }}" required>
+        <textarea name="content" required>{{ entry.content }}</textarea>
+        <div class="meta">{{ entry.entry_date }} · {{ entry.updated_at }}</div>
+        <div class="actions">
+          <button type="submit">Save</button>
+          <button type="button" class="danger" hx-delete="/ui/diary-entries/{{ entry.id }}?year={{ calendar_year }}&month={{ calendar_month }}" hx-target="#diary-section" hx-swap="outerHTML" hx-confirm="Delete this diary entry?">Delete</button>
+        </div>
+      </form>
+    {% else %}
+      <p>No diary entries yet.</p>
+    {% endfor %}
+  </div>
+</section>
