@@ -6,7 +6,7 @@ from sqlalchemy import select, func
 Base = declarative_base()
 
 BASE_DIR = os.path.dirname(__file__)
-DB_PATH = os.path.join(BASE_DIR, 'habit_maker.db')
+DB_PATH = os.path.join("/tmp", "habit_maker.db") if os.environ.get("VERCEL") else os.path.join(BASE_DIR, "habit_maker.db")
 DATABASE_URL = f'sqlite+aiosqlite:///{DB_PATH}'
 
 engine = create_async_engine(DATABASE_URL, echo=True)

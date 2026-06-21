@@ -11,8 +11,9 @@ dependencies = [
     "pydantic",
     "pydantic-settings",
     "jinja2",
-    "pwdlib",
+    "pwdlib[argon2]",
     "pyjwt",
+    "python-multipart",
 ]
 
 [tool.vercel]
