@@ -4,18 +4,11 @@
 
 {% block body %}
 <header>
-  <h1>Habit Booster</h1>
-  <nav class="nav">
-    <a href="/" class="secondary">Page 1</a>
-    <a href="/page2" class="secondary">Page 2</a>
-    <form method="post" action="/logout" style="margin:0;">
-      <button type="submit" class="secondary">Log out</button>
-    </form>
-  </nav>
+  <h1>Calendar</h1>
+  <p>Your momentum</p>
 </header>
 
 <main class="stack">
-  {% include "partials/page2_category_picker.html" %}
   {% include "partials/calendar_section.html" %}
 </main>
 {% endblock %}

@@ -1,7 +1,10 @@
-<section id="timer-section" data-timer-root>
-  <h2>5minutes timer</h2>
-  <div class="actions">
-    <button type="button" onclick="startTimer(this)">start</button>
+<section id="timer-section" class="timer-card" data-timer-root>
+  <div class="ring" data-timer-ring style="--p:0">
+    <div class="ring-inner">
+      <div class="ring-time" data-timer-time>5:00</div>
+      <div class="ring-label">focus</div>
+    </div>
   </div>
-  <div class="meta" data-timer-status>not started</div>
+  <button type="button" class="cta" onclick="startTimer(this)">Start 5 minutes</button>
+  <div class="timer-status" data-timer-status>Ready when you are</div>
 </section>

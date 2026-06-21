@@ -1,11 +1,11 @@
 <section id="page1-memo-section">
-  <h2>Memos</h2>
+  <h2>Notes</h2>
   <div class="stack">
     <label>
-      <textarea id="page1-memo-input" name="memo_content" placeholder="write anything"></textarea>
+      <textarea id="page1-memo-input" name="memo_content" placeholder="How did it go?"></textarea>
     </label>
     <div class="actions">
-      <button hx-post="/memos" hx-include="#page1-memo-input" hx-swap="outerHTML" hx-target="#page1-memo-section" class="button">add</button>
+      <button hx-post="/memos" hx-include="#page1-memo-input" hx-swap="outerHTML" hx-target="#page1-memo-section" class="cta">Save note</button>
     </div>
   </div>
 </section>

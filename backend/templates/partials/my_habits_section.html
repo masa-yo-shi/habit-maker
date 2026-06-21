@@ -1,12 +1,46 @@
 <section id="my-habits-section"{% if oob %} hx-swap-oob="true"{% endif %}>
   <h2>My Habit</h2>
-  <label>
-    <select id="page1-habit-select" name="habit">
-      {% for habit in my_habits %}
-        <option value="{{ habit.name }}">{{ habit.name }}</option>
-      {% else %}
-        <option value="">nothing registered</option>
-      {% endfor %}
-    </select>
-  </label>
+  <div class="actions" style="align-items:center">
+    <label style="flex:1; margin:0">
+      <select id="page1-habit-select" name="habit">
+        {% for habit in my_habits %}
+          <option value="{{ habit.name }}" data-id="{{ habit.id }}">{{ habit.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="button" class="secondary" onclick="deleteSelectedHabit(this)">Delete</button>
+    <button type="button" class="secondary" onclick="document.getElementById('page1-new-habit-modal').classList.add('open')">+ New habit</button>
+  </div>
+
+  <div id="page1-new-habit-modal" class="modal-overlay" onclick="if (event.target === this) this.classList.remove('open')">
+    <div class="modal">
+      <button type="button" class="modal-close" onclick="document.getElementById('page1-new-habit-modal').classList.remove('open')" aria-label="Close">&times;</button>
+      <h3>New habit</h3>
+      <form id="page1-new-habit-form" hx-post="/ui/page2/register-original-habit?category=Original" hx-swap="none" hx-on::after-request="document.getElementById('page1-new-habit-modal').classList.remove('open'); this.reset()">
+        <label>
+          Name
+          <input type="text" name="name" required>
+        </label>
+        <button type="submit">Register as My Habit</button>
+      </form>
+    </div>
+  </div>
 </section>
+
+<script>
+  function deleteSelectedHabit(button) {
+    const select = document.getElementById('page1-habit-select');
+    const option = select.options[select.selectedIndex];
+    if (!option || !option.dataset.id) {
+      alert('No habit to delete.');
+      return;
+    }
+    if (!confirm('Delete "' + option.value + '"?')) {
+      return;
+    }
+    htmx.ajax('DELETE', '/ui/habits/' + option.dataset.id, {
+      target: '#my-habits-section',
+      swap: 'outerHTML',
+    });
+  }
+</script>
