@@ -54,6 +54,14 @@ templates = Jinja2Templates(directory=str(Path(__file__).resolve().parents[1] / 
 SOURCE_CATEGORIES = ["Health", "Personal Development", "Mental Health", "Original"]
 MY_HABITS_CATEGORY = "My Habits"
 
+# Habits every newly registered user starts with under "My Habits".
+DEFAULT_MY_HABITS = [
+    ("Squad", "Spend time with your squad."),
+    ("Meditate", "Practice mindfulness meditation."),
+    ("Write three good things", "Write down three good things that happened today."),
+    ("Write 10 thanks list", "Write a list of 10 things you are thankful for."),
+]
+
 auth_router = APIRouter(tags=["auth"])
 
 @auth_router.post("/register", response_model=UserPublic)
@@ -76,6 +84,18 @@ async def register_user(
         password_hash=get_password_hash(form_data.password),
     )
     created_user = await main_cruds.post_user(db_session, new_user)
+
+    for name, description in DEFAULT_MY_HABITS:
+        db_session.add(
+            habit_models.Habit(
+                name=name,
+                description=description,
+                category=MY_HABITS_CATEGORY,
+                user_id=created_user.id,
+            )
+        )
+    await db_session.commit()
+
     return created_user
 
 @auth_router.post("/login", response_model=ResponseSchema)

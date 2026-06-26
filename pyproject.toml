@@ -8,6 +8,7 @@ dependencies = [
     "uvicorn",
     "sqlalchemy",
     "aiosqlite",
+    "asyncpg",
     "pydantic",
     "pydantic-settings",
     "jinja2",

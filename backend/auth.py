@@ -14,10 +14,13 @@ from cruds.main import get_user_by_username
 from shcemas.main import TokenData, UserInDB
 
 
-# SECRET_KEY = os.getenv("SECRET_KEY")
-SECRET_KEY = "test-secret"
+SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY is not set")
+    # Require an explicit secret in deployed (serverless) environments; allow a
+    # local dev fallback so running the app locally does not need extra setup.
+    if os.environ.get("VERCEL"):
+        raise RuntimeError("SECRET_KEY is not set")
+    SECRET_KEY = "dev-insecure-secret-key-change-me"
 
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))

@@ -1,15 +1,63 @@
 import os
+import ssl
+from urllib.parse import urlsplit, urlunsplit
+
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.pool import NullPool
 from sqlalchemy import select, func
 
 Base = declarative_base()
 
 BASE_DIR = os.path.dirname(__file__)
-DB_PATH = os.path.join("/tmp", "habit_maker.db") if os.environ.get("VERCEL") else os.path.join(BASE_DIR, "habit_maker.db")
-DATABASE_URL = f'sqlite+aiosqlite:///{DB_PATH}'
 
-engine = create_async_engine(DATABASE_URL, echo=True)
+# Persistent database connection string injected by the hosting provider
+# (e.g. Neon on Vercel sets DATABASE_URL / POSTGRES_URL). When none is set we
+# fall back to a local SQLite file for development.
+_PG_ENV_VARS = (
+    "DATABASE_URL",
+    "POSTGRES_URL",
+    "POSTGRES_URL_NON_POOLING",
+    "DATABASE_URL_UNPOOLED",
+)
+
+
+def _raw_db_url() -> str | None:
+    for name in _PG_ENV_VARS:
+        value = os.environ.get(name)
+        if value:
+            return value
+    return None
+
+
+def _build_engine():
+    raw = _raw_db_url()
+    if raw and raw.startswith(("postgres://", "postgresql://")):
+        # Normalize to the asyncpg driver and drop query params (e.g. sslmode)
+        # that asyncpg does not understand; SSL is configured via connect_args.
+        parts = urlsplit(raw)
+        url = urlunsplit(("postgresql+asyncpg", parts.netloc, parts.path, "", ""))
+        connect_args = {
+            "ssl": ssl.create_default_context(),
+            # Required for transaction-pooled connections (pgbouncer).
+            "statement_cache_size": 0,
+        }
+        return create_async_engine(
+            url,
+            echo=False,
+            poolclass=NullPool,
+            connect_args=connect_args,
+        )
+
+    db_path = (
+        os.path.join("/tmp", "habit_maker.db")
+        if os.environ.get("VERCEL")
+        else os.path.join(BASE_DIR, "habit_maker.db")
+    )
+    return create_async_engine(f"sqlite+aiosqlite:///{db_path}", echo=True)
+
+
+engine = _build_engine()
 
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
