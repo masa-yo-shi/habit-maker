@@ -552,6 +552,24 @@ async def delete_diary_entry_ui(
     return templates.TemplateResponse(request, "partials/diary_bundle.html", context)
 
 
+@router.delete("/ui/calendar/diary-entries/{entry_id}", response_class=HTMLResponse)
+async def delete_calendar_diary_entry_ui(
+    request: Request,
+    entry_id: int,
+    db: Annotated[AsyncSession, Depends(db.get_dbsession)],
+    user_id: Annotated[int, Depends(get_current_user)],
+    year: int | None = None,
+    month: int | None = None,
+):
+    try:
+        await habit_cruds.delete_diary_entry(db, entry_id, user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    context = await _calendar_context(db, year, month, user_id)
+    context["request"] = request
+    return templates.TemplateResponse(request, "partials/calendar_section.html", context)
+
+
 @router.get("/ui/calendar", response_class=HTMLResponse)
 async def calendar_section(
     request: Request,

@@ -9,8 +9,23 @@
   <section id="calendar-days"{% if oob %} hx-swap-oob="true"{% endif %}>
   <div class="calendar-days">
     {% for day in calendar_summary.days %}
-      <div class="day-card">
-        <div class="meta">{{ day.entry_date.day }}</div>
+      <div class="day-card{% if day.entry_count %} has-entries{% endif %}">
+        <div class="day-head">
+          <span class="meta">{{ day.entry_date.day }}</span>
+        </div>
+        {% for entry in day.entries %}
+          <div class="day-entry">
+            <div class="day-entry-body">
+              <strong>{{ entry.title }}</strong>
+              {% if entry.content %}<span class="meta">{{ entry.content }}</span>{% endif %}
+            </div>
+            <button type="button" class="delete"
+              hx-delete="/ui/calendar/diary-entries/{{ entry.id }}?year={{ calendar_year }}&month={{ calendar_month }}"
+              hx-target="#calendar-section"
+              hx-swap="outerHTML"
+              hx-confirm="Delete this note?">×</button>
+          </div>
+        {% endfor %}
       </div>
     {% endfor %}
   </div>

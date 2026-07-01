@@ -305,8 +305,21 @@
         gap: 10px;
         grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       }
-      .day-card { padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-2); }
-      .day-count { font-family: var(--font-num); font-weight: 700; color: var(--accent); }
+      .day-card { padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-2); display: grid; gap: 8px; align-content: start; }
+      .day-card.has-entries { border-color: var(--accent); background: #f4f2ff; }
+      .day-head { display: flex; align-items: center; justify-content: space-between; }
+      .day-entry {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 8px 34px 8px 10px;
+        border-radius: 10px;
+        background: var(--surface);
+      }
+      .day-entry-body { display: grid; gap: 2px; flex: 1; min-width: 0; }
+      .day-entry strong { font-size: 0.82rem; }
+      .day-entry .meta { font-size: 0.76rem; overflow-wrap: anywhere; }
 
       .stack { display: grid; gap: 14px; }
 
@@ -354,10 +367,104 @@
       }
     </style>
     <script>
+      const TIMER_STORAGE_KEY = 'habitMaker.activeTimerId';
+      const TIMER_TOTAL_SECONDS = 300;
+
       function formatRemaining(seconds) {
         const minutes = Math.floor(seconds / 60);
         const secondsLeft = String(seconds % 60).padStart(2, '0');
         return `${minutes}:${secondsLeft}`;
+      }
+
+      function storeTimerId(timerId) {
+        try { localStorage.setItem(TIMER_STORAGE_KEY, timerId); } catch (e) {}
+      }
+
+      function clearStoredTimerId() {
+        try { localStorage.removeItem(TIMER_STORAGE_KEY); } catch (e) {}
+      }
+
+      function readStoredTimerId() {
+        try { return localStorage.getItem(TIMER_STORAGE_KEY); } catch (e) { return null; }
+      }
+
+      // Reconnects the on-screen ring to a server-side timer identified by timerId.
+      // The backend keeps the timer running (and saves the entry) regardless of the
+      // browser, so this only re-renders the UI and keeps polling for status.
+      function attachTimer(timerId) {
+        const root = document.querySelector('[data-timer-root]');
+        if (!root) return; // Timer UI isn't on this page; the backend keeps running.
+
+        const status = root.querySelector('[data-timer-status]');
+        const timeEl = root.querySelector('[data-timer-time]');
+        const ring = root.querySelector('[data-timer-ring]');
+        const button = root.querySelector('.cta');
+        const total = TIMER_TOTAL_SECONDS;
+        const setRing = (remaining) => {
+          if (ring) {
+            const pct = Math.max(0, Math.min(100, ((total - remaining) / total) * 100));
+            ring.style.setProperty('--p', String(pct));
+          }
+        };
+
+        if (button) button.disabled = true;
+        if (ring) ring.classList.add('running');
+        status.textContent = 'Focusing…';
+
+        const reset = (message) => {
+          if (ring) ring.classList.remove('running');
+          if (button) button.disabled = false;
+          if (status) status.textContent = message;
+        };
+
+        const poll = async () => {
+          try {
+            const latestResponse = await fetch(`/ui/timer/${encodeURIComponent(timerId)}`, {
+              headers: { 'Accept': 'application/json' },
+            });
+
+            if (latestResponse.status === 404) {
+              // Timer no longer known to the server (e.g. process restarted).
+              clearStoredTimerId();
+              if (timeEl) timeEl.textContent = formatRemaining(total);
+              setRing(total);
+              reset('Ready when you are');
+              return;
+            }
+
+            if (!latestResponse.ok) {
+              throw new Error(await latestResponse.text());
+            }
+
+            const latest = await latestResponse.json();
+            if (latest.status === 'running') {
+              if (timeEl) timeEl.textContent = formatRemaining(latest.remaining_seconds);
+              setRing(latest.remaining_seconds);
+              status.textContent = 'Keep going';
+              window.setTimeout(poll, 1000);
+              return;
+            }
+
+            if (latest.status === 'completed') {
+              clearStoredTimerId();
+              if (timeEl) timeEl.textContent = '0:00';
+              setRing(0);
+              reset('Done · saved');
+              htmx.ajax('GET', '/ui/page1/memo', { target: '#page1-memo-section', swap: 'outerHTML' });
+              return;
+            }
+
+            clearStoredTimerId();
+            reset(`Couldn't save${latest.error ? ' · ' + latest.error : ''}`);
+          } catch (error) {
+            // Transient error: keep the timer visible and retry rather than giving up,
+            // since the server-side timer is likely still running.
+            if (status) status.textContent = 'Reconnecting…';
+            window.setTimeout(poll, 2000);
+          }
+        };
+
+        poll();
       }
 
       async function startTimer(button) {
@@ -369,14 +476,7 @@
         const memo = memoInput ? memoInput.value.trim() : '';
         const status = root.querySelector('[data-timer-status]');
         const timeEl = root.querySelector('[data-timer-time]');
-        const ring = root.querySelector('[data-timer-ring]');
-        const total = 300;
-        const setRing = (remaining) => {
-          if (ring) {
-            const pct = Math.max(0, Math.min(100, ((total - remaining) / total) * 100));
-            ring.style.setProperty('--p', String(pct));
-          }
-        };
+        const total = TIMER_TOTAL_SECONDS;
 
         if (!habit) {
           status.textContent = 'Pick a habit first';
@@ -384,16 +484,8 @@
         }
 
         button.disabled = true;
-        if (ring) ring.classList.add('running');
         status.textContent = 'Focusing…';
         if (timeEl) timeEl.textContent = formatRemaining(total);
-        setRing(total);
-
-        const finish = (message) => {
-          if (ring) ring.classList.remove('running');
-          status.textContent = message;
-          button.disabled = false;
-        };
 
         try {
           const response = await fetch('/ui/timer/start', {
@@ -410,45 +502,19 @@
           }
 
           const timer = await response.json();
-
-          const poll = async () => {
-            try {
-              const latestResponse = await fetch(`/ui/timer/${encodeURIComponent(timer.timer_id)}`, {
-                headers: { 'Accept': 'application/json' },
-              });
-
-              if (!latestResponse.ok) {
-                throw new Error(await latestResponse.text());
-              }
-
-              const latest = await latestResponse.json();
-              if (latest.status === 'running') {
-                if (timeEl) timeEl.textContent = formatRemaining(latest.remaining_seconds);
-                setRing(latest.remaining_seconds);
-                status.textContent = 'Keep going';
-                window.setTimeout(poll, 1000);
-                return;
-              }
-
-              if (latest.status === 'completed') {
-                if (timeEl) timeEl.textContent = '0:00';
-                setRing(0);
-                finish('Done · saved');
-                htmx.ajax('GET', '/ui/page1/memo', { target: '#page1-memo-section', swap: 'outerHTML' });
-                return;
-              }
-
-              finish(`Couldn't save${latest.error ? ' · ' + latest.error : ''}`);
-            } catch (error) {
-              finish("Couldn't reach the timer");
-            }
-          };
-
-          poll();
+          storeTimerId(timer.timer_id);
+          attachTimer(timer.timer_id);
         } catch (error) {
-          finish("Couldn't start the timer");
+          status.textContent = "Couldn't start the timer";
+          button.disabled = false;
         }
       }
+
+      // Resume a running timer when returning to (or reloading) the page.
+      document.addEventListener('DOMContentLoaded', () => {
+        const storedTimerId = readStoredTimerId();
+        if (storedTimerId) attachTimer(storedTimerId);
+      });
     </script>
   </head>
   <body>
